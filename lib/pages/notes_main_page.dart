@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_indicator/loading_indicator.dart';
@@ -70,13 +71,27 @@ class _NotesMainPageState extends State<NotesMainPage> {
                 : _List(
                     items: data,
                   ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                AppNavigator.gotoAddNotePage(context);
-              },
-              tooltip: 'Increment',
-              child: const Icon(Icons.add),
-            ),
+            floatingActionButton: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FloatingActionButton(
+                    backgroundColor: Colors.red,
+                    onPressed: () async {
+                      final stop = await Alarm.stop();
+                    },
+                    tooltip: 'Apagar',
+                    child: const Icon(Icons.alarm_off),
+                  ),
+                  const SizedBox(height: 8),
+                  FloatingActionButton(
+                    onPressed: () {
+                      AppNavigator.gotoAddNotePage(context);
+                    },
+                    tooltip: 'Increment',
+                    child: const Icon(Icons.add),
+                  ),
+                ]),
           );
         }
         return const Expanded(
@@ -98,7 +113,12 @@ class _List extends StatelessWidget {
   final List<NoteModel> items;
 
   NoteModel createEmptyModel() {
-    return NoteModel(tittle: '', text: '', date: DateTime.now());
+    return NoteModel(
+      tittle: '',
+      text: '',
+      date: DateTime.now(),
+      hasAlarm: false,
+    );
   }
 
   @override
@@ -157,26 +177,38 @@ class _NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     DateTime date = item.date;
     final String dateFormatted = DateFormat.yMMMMEEEEd('es').format(date);
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.3),
-        borderRadius: const BorderRadius.all(
-          Radius.circular(15),
+    return InkWell(
+      onTap: () {
+        AppNavigator.gotoNoteDescriptionPage(context, item);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.amber.withOpacity(0.3),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(15),
+          ),
         ),
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 15,
-          vertical: 15,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(item.tittle),
-            const _MinSpace(),
-            Text(capitalize(dateFormatted)),
-          ],
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 15,
+            vertical: 15,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(capitalize(item.tittle)),
+                    const _MinSpace(),
+                    Text(capitalize(dateFormatted)),
+                  ],
+                ),
+              ),
+              if (item.hasAlarm) Icon(Icons.alarm)
+            ],
+          ),
         ),
       ),
     );

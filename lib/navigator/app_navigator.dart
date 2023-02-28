@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:r_mem_this/models/note_model.dart';
 import 'package:r_mem_this/pages/add_note_page.dart';
+import 'package:r_mem_this/pages/note_description_page.dart';
 import 'package:r_mem_this/pages/notes_main_page.dart';
 
 class AppNavigator {
@@ -19,6 +21,17 @@ class AppNavigator {
         builder: (context) => const NotesMainPage(),
       ),
       (r) => false,
+    );
+  }
+
+  static void gotoNoteDescriptionPage(BuildContext context, NoteModel note) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteDescriptionPage(
+          note: note,
+        ),
+      ),
     );
   }
 }

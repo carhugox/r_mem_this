@@ -1,10 +1,12 @@
+import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:r_mem_this/pages/notes_main_page.dart';
 
-void main() {
+Future<void> main() async {
   initializeDateFormatting();
   runApp(const MyApp());
+  await Alarm.init();
 }
 
 class MyApp extends StatelessWidget {

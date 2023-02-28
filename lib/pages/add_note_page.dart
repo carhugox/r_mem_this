@@ -1,9 +1,14 @@
 import 'dart:convert';
 
+import 'package:alarm/alarm.dart';
+import 'package:alarm/model/alarm_settings.dart';
+import 'package:date_time_picker/date_time_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:r_mem_this/models/note_model.dart';
 import 'package:r_mem_this/navigator/app_navigator.dart';
+import 'package:r_mem_this/utils/string_uitils.dart';
 
 class AddNotePage extends StatefulWidget {
   const AddNotePage({super.key});
@@ -19,6 +24,9 @@ class _AddNotePageState extends State<AddNotePage> {
   final LocalStorage storage = LocalStorage('notes');
 
   bool _error = false;
+  bool _showDateTimePicker = false;
+  DateTime alarmDate = DateTime.now();
+  String alarmDateString = '';
 
   @override
   void initState() {
@@ -32,7 +40,7 @@ class _AddNotePageState extends State<AddNotePage> {
     });
   }
 
-  void _saveNote(NoteModel note, DateTime date) {
+  Future<void> _saveNote(NoteModel note, DateTime date) async {
     final allNotesString = storage.getItem('ALL');
     if (allNotesString != null) {
       final notesJson = jsonDecode(allNotesString) as List;
@@ -48,11 +56,28 @@ class _AddNotePageState extends State<AddNotePage> {
       list.add(note.toJson());
       storage.setItem('ALL', jsonEncode(list));
     }
+    if (alarmDateString.isNotEmpty) {
+      final dateTime = DateTime.parse(alarmDateString);
+      final alarmSettings = AlarmSettings(
+        dateTime: dateTime,
+        assetAudioPath: 'assets/sample.mp3',
+        loopAudio: true,
+        notificationTitle: capitalize(note.tittle),
+        notificationBody: 'Regresa a la app para finalizar la alarma.',
+        enableNotificationOnKill: true,
+      );
+      final res = await Alarm.set(settings: alarmSettings);
+      if (res) {
+        print('alarm set');
+      }
+    }
     AppNavigator.gotoMainPage(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final String dateFormatted =
+        DateFormat('yyyy.MMMMM.dd GGG hh:mm aaa', 'es').format(alarmDate);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar nota'),
@@ -87,11 +112,82 @@ class _AddNotePageState extends State<AddNotePage> {
                 border: OutlineInputBorder(),
               ),
             ),
-          )
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 15,
+              vertical: 5,
+            ),
+            child: Row(
+              children: [
+                const Text("Crear recordatorio"),
+                Switch(
+                  value: _showDateTimePicker,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _showDateTimePicker = value;
+                      if (!value) {
+                        alarmDateString = '';
+                        alarmDate = DateTime.now();
+                      }
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          if (_showDateTimePicker)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 5,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  SizedBox(
+                    height: 30,
+                    width: 30,
+                    child: DateTimePicker(
+                      initialValue: alarmDateString,
+                      type: DateTimePickerType.dateTime,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                      dateHintText: "Fecha",
+                      icon: const Icon(Icons.alarm),
+                      dateMask: 'dd/MM/yyyy HH:mm',
+                      onChanged: (value) {
+                        print('AAAAAAAAAAA $value');
+                        setState(() {
+                          alarmDateString = value;
+                          alarmDate = DateTime.parse(value);
+                        });
+                      },
+                    ),
+                  ),
+                  Text(dateFormatted),
+                  TextButton(
+                    onPressed: () {
+                      final date = DateTime.now()
+                          .add(
+                            Duration(minutes: 1),
+                          )
+                          .toIso8601String();
+                      print('AAAAAAAAAAA $date');
+                      setState(() {
+                        alarmDateString = date;
+                        alarmDate = DateTime.parse(date);
+                      });
+                    },
+                    child: const Text("1 min"),
+                  )
+                ],
+              ),
+            )
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
           if (_tittleFieldController.text.isEmpty) {
             setState(() {
               _error = true;
@@ -106,8 +202,9 @@ class _AddNotePageState extends State<AddNotePage> {
               tittle: _tittleFieldController.text,
               text: _descriptionFieldController.text,
               date: date,
+              hasAlarm: _showDateTimePicker,
             );
-            _saveNote(note, date);
+            await _saveNote(note, date);
           }
         },
         tooltip: 'Agregar',
